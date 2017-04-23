@@ -26,6 +26,8 @@ a margin line to help you keep track of this guideline!
 library(ggplot2)
 library(knitr)
 library(dplyr)
+library(grid)
+library(gridExtra)
 ```
 
 ```{r echo=FALSE, Load_the_Data}
@@ -111,12 +113,26 @@ wine$alcohol.quartile <- ifelse(cond, 'high', wine$alcohol.quartile)
 table(wine$alcohol.quartile)
 ```
 
+```{r echo=FALSE, Univariate_Plots}
+#break down the volatile acidity into halves and store that in a new variable
+cond <- wine$volatile.acidity < .52
+wine$vol.acid.half <- ifelse(cond, 'low', 'high')
+table(wine$vol.acid.half)
 
-> **Tip**: Make sure that you leave a blank line between the start / end of
-each code block and the end / start of your Markdown text so that it is
-formatted nicely in the knitted text. Note as well that text on consecutive
-lines is treated as a single space. Make sure you have a blank line between
-your paragraphs so that they too are formatted for easy readability.
+wine$vol.acid.half.fac <- factor(wine$vol.acid.half, levels = c("low", "high"))
+```
+
+
+```{r echo=FALSE, Univariate_Plots}
+#create a factor variable to organize alcohol quartile  in orderfor a histogram
+wine$alc.qua.fac <- factor(wine$alcohol.quartile, 
+                           levels = c("low", "mid-low","mid-high", "high"))
+
+ggplot(wine, aes(x = wine$alc.qua.fac)) +
+  geom_bar(color = 'black', fill = '#59A722')
+
+```
+
 
 # Univariate Analysis
 
@@ -141,6 +157,10 @@ in the bivariate section.
 Yes, I created the alcohol.quartile variable based on the quartile 
 that the alcohol variable falls into for each observation.
 
+I also created wine$alc.qua.fac to organize alcohol.quartile in order.
+
+I also created a new variable to classify volatile acidity into buckets.
+
 ### Of the features you investigated, were there any unusual distributions? \
 Did you perform any operations on the data to tidy, adjust, or change the form \
 of the data? If so, why did you do this?
@@ -156,25 +176,175 @@ between variables might be interesting to look at in this section? Don't limit
 yourself to relationships between a main output feature and one of the
 supporting variables. Try to look at relationships between supporting variables
 as well.
-
-```{r echo=FALSE, Bivariate_Plots}
-
+```{r}
+str(wine)
 ```
 
-# Bivariate Analysis
+```{r echo=FALSE, Bivariate_Plots}
+#create a box plot of alcohol quartile vs. quality
+qplot(x = alc.qua.fac, y = quality,
+      data = wine,
+      geom = 'boxplot')
+```
 
-> **Tip**: As before, summarize what you found in your bivariate explorations
-here. Use the questions below to guide your discussion.
+Based on these box plots, it looks like alcohol is positively correlated with
+quality.  Let's investigate further with a scatterplot.
+
+```{r echo=FALSE, Bivariate_Plots}
+ggplot(aes(x = alcohol, y = quality), data = wine) + 
+  geom_point(alpha = 1/20, position = position_jitter(w = 0)) +
+  geom_smooth(method = 'lm', color = 'red')
+```
+
+This scatter-plot shows a positive correlation between alcohol content and
+quality, affirming my suspicion.
+
+Let's see how the rest of the variables correlate with quality.
+
+```{r echo=FALSE, Bivariate_Plots}
+p1 <- ggplot(aes(x = fixed.acidity, y = quality), data = wine) + 
+  geom_point(alpha = 1/20, position = position_jitter(w = 0)) +
+  geom_smooth(method = 'lm', color = 'red')
+p2 <- ggplot(aes(x = volatile.acidity, y = quality), data = wine) + 
+  geom_point(alpha = 1/20, position = position_jitter(w = 0)) +
+  geom_smooth(method = 'lm', color = 'red')
+p3 <- ggplot(aes(x = citric.acid, y = quality), data = wine) + 
+  geom_point(alpha = 1/20, position = position_jitter(w = 0)) +
+  geom_smooth(method = 'lm', color = 'red')
+p4 <- ggplot(aes(x = residual.sugar, y = quality), data = wine) + 
+  geom_point(alpha = 1/20, position = position_jitter(w = 0)) +
+  geom_smooth(method = 'lm', color = 'red')
+p5 <- ggplot(aes(x = chlorides, y = quality), data = wine) + 
+  geom_point(alpha = 1/20, position = position_jitter(w = 0)) +
+  geom_smooth(method = 'lm', color = 'red')
+p6 <- ggplot(aes(x = free.sulfur.dioxide, y = quality), data = wine) + 
+  geom_point(alpha = 1/20, position = position_jitter(w = 0)) +
+  geom_smooth(method = 'lm', color = 'red')
+p7 <- ggplot(aes(x = total.sulfur.dioxide, y = quality), data = wine) + 
+  geom_point(alpha = 1/20, position = position_jitter(w = 0)) +
+  geom_smooth(method = 'lm', color = 'red')
+p8 <- ggplot(aes(x = density, y = quality), data = wine) + 
+  geom_point(alpha = 1/20, position = position_jitter(w = 0)) +
+  geom_smooth(method = 'lm', color = 'red')
+p9 <- ggplot(aes(x = pH, y = quality), data = wine) + 
+  geom_point(alpha = 1/20, position = position_jitter(w = 0)) +
+  geom_smooth(method = 'lm', color = 'red')
+p10 <- ggplot(aes(x = sulphates, y = quality), data = wine) + 
+  geom_point(alpha = 1/20, position = position_jitter(w = 0)) +
+  geom_smooth(method = 'lm', color = 'red')
+p11 <- ggplot(aes(x = alcohol, y = quality), data = wine) + 
+  geom_point(alpha = 1/20, position = position_jitter(w = 0)) +
+  geom_smooth(method = 'lm', color = 'red')
+
+grid.arrange(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, ncol=4)
+```
+
+Based on these plots, it looks like alcohol, sulphates, and citric acid have
+relatively large positive correlation with quality.  Also, it looks like
+volatile acidity, chlorides, and total sulfur dioxide have relatively large
+negative correlation with quality.
+
+Let's calculate the Pearson correlation coefficient between all numeric
+variables
+
+```{r echo=FALSE, Bivariate_Plots}
+#calculate the Pearson correlation coefficient between all numeric variables
+cor(wine[2:13])
+```
+
+Based on these correlation coefficients, it looks like alcohol has the highest
+correlation with quality with a Pearson corr coef = .476.  The next highest is 
+sulphates with R = .251 and then citric acid with R=.226.
+
+The most negative correlation coefficients are volatile acidity with R = -.391 
+and desnity with R = -.175.  
+
+This confirms what what I saw in the earlier graphs.
+
+The strongest relationship is fixed acidity to citric acid with 
+R = .672, and the most negative relationship is fixed acidity to pH with 
+R = -.683.  These variables would logically have strong relationships because
+they all describe acidity.
+
+The highest R value for a relationship that stuck out to me was density to 
+fixed acidity with R = .668.  Let's explore that more.  
+
+```{r echo=FALSE, Bivariate_Plots}
+ggplot(aes(x = density, y = fixed.acidity), data = wine) + 
+  geom_point(alpha = 1/10) +
+  geom_smooth(method = 'lm', color = 'blue')
+```
+
+High correlation in this graph!
+
+Now I want to explore volatile acidity's correlation with quality, because
+I noted that it has a strong negative correlation.
+
+```{r echo=FALSE, Bivariate_Plots}
+#create a box plot of volatile acidity half vs. quality
+qplot(x = vol.acid.half.fac, y = quality,
+      data = wine,
+      geom = 'boxplot')
+```
+
+This isn't a very useful graph, but it does show that the volatile acidity 
+causes the quality to have a higher median when separated into buckets.
+
+Let's group the quality into groups and analyze the data that way
+
+```{r}
+#calculate the alcohol mean and median by quality bucket
+quality_groups <- group_by(wine,quality)
+wine.alc_by_qual <- summarise(quality_groups,
+                             alc_mean = mean(alcohol),
+                             alc_median = median(alcohol),
+                             n = n())
+
+wine.alc_by_qual <- arrange(wine.alc_by_qual,quality)
+
+head(wine.alc_by_qual)
+```
+
+```{r}
+ggplot(aes(quality, alc_mean), data = wine.alc_by_qual) + 
+  geom_line(color = 'purple')
+```
+
+This graph shows a strong correlation between wine quality and the mean value 
+of alcohol content for each quality.
+
+# Bivariate Analysis
 
 ### Talk about some of the relationships you observed in this part of the \
 investigation. How did the feature(s) of interest vary with other features in \
 the dataset?
 
+Based on these correlation coefficients, it looks like alcohol has the highest
+correlation with quality (Pearson corr coef = .476).  The next highest is 
+sulphates with R = .251 and then citric acid with R=.226.
+
+The most negative correlation coefficients with quality 
+are volatile acidity with R = -.391 and density with R = -.175.  
+
 ### Did you observe any interesting relationships between the other features \
 (not the main feature(s) of interest)?
 
+The strongest relationship out of all the data is fixed acidity to citric acid 
+with R = .672, and the most negative relationship is fixed acidity to pH with 
+R = -.683.  These variables would logically have strong relationships because
+they all describe acidity.
+
+The highest R value for a relationship that stuck out to me was density to 
+fixed acidity with R = .668. 
+
 ### What was the strongest relationship you found?
 
+As mentioned earlier, the strongest relationship I saw was fixed acidity to
+citric acid with R = .672.  However, this makes sense because they both
+describe acidity.
+
+The highest R value for two variables that didn't definitely describe the same
+thing was density to fixed acidity with R = .668. 
 
 # Multivariate Plots Section
 
