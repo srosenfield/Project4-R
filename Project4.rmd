@@ -33,7 +33,8 @@ library(dplyr)
 wine <- read.csv('wineQualityReds.csv')
 ```
 
-> **Data Description**:  This data contains 1599 instances of red wine of the
+### Data Description
+This data contains 1599 instances of red wine of the
 Portugeses "Vinho Verde" variety.  For each instance, there are 11 variables
 contain info about the chemical properties of the wine, and 1 rating that 
 corresponds to the quality of the wine.  The quality of the wine is based on 
@@ -49,8 +50,67 @@ There should be multiple code chunks and text sections; the first one below is
 just to help you get started.
 
 ```{r echo=FALSE, Univariate_Plots}
-
+#run a summary of the data
+str(wine)
+summary(wine)
 ```
+
+```{r echo=FALSE, Univariate_Plots}
+#get a boxplot of all columns in order to visualize them
+par(mfrow=c(3,4))
+for (i in 2:length(wine)) {
+        boxplot(wine[,i], main=names(wine[i]), type="l")
+}
+```
+
+Some observations of these box plots:
+1 - The variables with relatively high spread include citric acid, alcohol, and
+quality.
+2 - The variables with relatively low spread include residual sugar, chlorides,
+and sulphates.
+3 - The variables with approximately normal distributions include citric acid,
+density, pH, alcohol, and quality.
+
+Let's examine the dependent variable quality a little more closely.
+
+```{r echo=FALSE, Univariate_Plots}
+#histogram of quality
+ggplot(data = wine, aes(x = quality)) +
+  geom_histogram(binwidth = .5, color = 'black', fill = '#59A722') +
+  scale_x_continuous(breaks = 1:10)
+```
+
+This plot shows a histogram of quality.  It's interesting that there were no
+values less than 3, or greater than 8.  It also seems like most of the values
+for quality were either 5 or 6.
+
+```{r echo=FALSE, Univariate_Plots}
+#typical is a new dataframe to show only wine observations with quality = [5,6]
+typical <- subset(wine, quality == 5 | quality == 6)
+
+#calculate the number of observations with quality = 5 or 6, divided by the \
+#total number of observations
+nrow(typical) / nrow(wine)
+```
+
+About 83.5% of all observations had quality = 5 or 6. This confirms my 
+observation from the histogram.
+
+My initial theory is alcohol content will have an effect on quality, so I'm
+going to break down the alcohol variable by quartile, and store this data
+in a new variable.
+
+```{r echo=FALSE, Univariate_Plots}
+#break down the alcohol content by quartile and store that in a new variable
+cond <- wine$alcohol < 9.5
+wine$alcohol.quartile <- ifelse(cond, 'low', 'mid-low')
+cond <- wine$alcohol >= 10.2 & wine$alcohol < 11.1
+wine$alcohol.quartile <- ifelse(cond, 'mid-high', wine$alcohol.quartile)
+cond <- wine$alcohol >= 11.1
+wine$alcohol.quartile <- ifelse(cond, 'high', wine$alcohol.quartile)
+table(wine$alcohol.quartile)
+```
+
 
 > **Tip**: Make sure that you leave a blank line between the start / end of
 each code block and the end / start of your Markdown text so that it is
@@ -65,17 +125,28 @@ reflect on and summarize what you've found. Use the questions below to help you
 gather your observations and add your own if you have other thoughts!
 
 ### What is the structure of your dataset?
+The dataset includes 1599 observations of 13 variables.  All 13 variables are 
+are of the type number except X and quality, which are integers.
 
 ### What is/are the main feature(s) of interest in your dataset?
+The main feature of interest in my dataset is the dependent variable quality.  
 
 ### What other features in the dataset do you think will help support your \
 investigation into your feature(s) of interest?
+As of now, any of the 11 independent variables can help support my 
+investigation into my feature of interest.  I will have to explore them more
+in the bivariate section.
 
 ### Did you create any new variables from existing variables in the dataset?
+Yes, I created the alcohol.quartile variable based on the quartile 
+that the alcohol variable falls into for each observation.
 
 ### Of the features you investigated, were there any unusual distributions? \
 Did you perform any operations on the data to tidy, adjust, or change the form \
 of the data? If so, why did you do this?
+
+Both residual sugar and chlorides had very long tails skewed to the right.
+I did not change the form of the data, though.
 
 
 # Bivariate Plots Section
